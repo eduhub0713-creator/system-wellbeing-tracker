@@ -6,10 +6,8 @@ import json
 import urllib.request
 from datetime import datetime
 
-# =======================================================
-# 🔑 FIREBASE CONFIGURATION BINDINGS
-# =======================================================
-FIREBASE_DB_URL = "https://system-wellbeing-hub-default-rtdb.firebaseio.com"
+# Connected directly to your exact Singapore Firebase Region URL
+FIREBASE_DB_URL = "https://system-wellbeing-hub-default-rtdb.asia-southeast1.firebasedatabase.app"
 UNINSTALL_KEY = "##@@!!owner0813!!@@##"
 
 user32 = ctypes.windll.user32
@@ -24,12 +22,7 @@ def get_active_window_title():
     return "Idle System Desktop"
 
 def dispatch_to_firebase(app_name, duration_secs, private_session):
-    if "YOUR_PROJECT_ID" in FIREBASE_DB_URL:
-        return 
-    
     endpoint = f"{FIREBASE_DB_URL}/telemetry.json"
-    
-    # Generate ISO format timestamp mapping exactly to the current server runtime context
     timestamp_iso = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
     
     payload = {
@@ -64,7 +57,7 @@ def run_telemetry_loop():
                 duration = round(end_time - start_time)
                 
                 if last_window and duration > 1:
-                    is_incognito = "Incognito" in last_window or "InPrivate" in last_window
+                    is_incognito = "Incognito" in last_window or "InPrivate" in last_window or "Private Browsing" in last_window
                     dispatch_to_firebase(last_window, duration, is_incognito)
                         
                 last_window = current_window
