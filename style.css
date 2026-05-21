@@ -15,18 +15,18 @@
 body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--bg-primary); color: var(--text-main); padding: 40px 20px; }
 .container { max-width: 1200px; margin: 0 auto; }
 
-/* Dashboard Typography elements */
+/* Dashboard Typography Elements */
 h1 { font-size: 2rem; font-weight: 700; margin-bottom: 6px; color: #fff; }
 h2 { font-size: 1.3rem; font-weight: 600; margin-bottom: 8px; color: #fff; }
 h3 { font-size: 1.1rem; margin-bottom: 6px; color: #fff; }
 p { color: var(--text-muted); font-size: 0.95rem; }
 
-/* Structural Panels */
+/* Structural Content Layout Blocks */
 .card { background-color: var(--bg-secondary); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
 .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 20px; }
 .platform-card { background-color: var(--bg-surface); padding: 20px; border-radius: 8px; border: 1px solid var(--border); }
 
-/* Interface Controls */
+/* Interface Interactive Control Nodes */
 .btn { display: inline-flex; align-items: center; justify-content: center; padding: 10px 20px; border-radius: 6px; font-weight: 600; font-size: 0.9rem; text-decoration: none; cursor: pointer; transition: background 0.2s; border: none; }
 .btn-primary { background-color: var(--accent); color: white; }
 .btn-primary:hover { background-color: var(--accent-hover); }
@@ -34,7 +34,7 @@ p { color: var(--text-muted); font-size: 0.95rem; }
 .btn-danger { background-color: transparent; border: 1px solid var(--danger); color: var(--danger); }
 .btn-danger:hover { background-color: var(--danger); color: white; }
 
-/* Timelined Data Matrix styling */
+/* Chronological Historical Log Trees */
 .time-group { margin-bottom: 24px; }
 .year-header { font-size: 1.5rem; color: #fff; border-bottom: 2px solid var(--accent); padding-bottom: 6px; margin-top: 24px; font-weight: 800; }
 .month-group { margin-left: 16px; margin-top: 16px; }
@@ -46,16 +46,21 @@ th { background-color: rgba(255,255,255,0.01); color: var(--text-muted); font-we
 td { border-bottom: 1px solid rgba(255,255,255,0.02); color: var(--text-main); }
 tr:hover { background-color: rgba(255,255,255,0.01); }
 
-/* Badge Indicators */
+/* Decorative Badge Indicators */
 .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
 .badge-incognito { background-color: rgba(239, 68, 68, 0.15); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.3); }
 .badge-standard { background-color: rgba(59, 130, 246, 0.15); color: var(--accent); border: 1px solid rgba(59, 130, 246, 0.3); }
 
-/* Authorization Interface Screen */
+/* Core Security Authentication Overlay Screen Components */
 #auth-overlay { position: fixed; inset: 0; background-color: var(--bg-primary); display: flex; justify-content: center; align-items: center; z-index: 99999; }
 .auth-box { background-color: var(--bg-secondary); border: 1px solid var(--border); width: 100%; max-width: 420px; padding: 40px; border-radius: 12px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.6); }
 .auth-box h2 { margin-bottom: 12px; }
 .auth-box p { margin-bottom: 20px; font-size: 0.9rem; }
-.auth-box input { width: 100%; padding: 14px; background-color: var(--bg-primary); border: 1px solid var(--border); border-radius: 6px; color: white; font-size: 1.1rem; margin-bottom: 20px; text-align: center; letter-spacing: 0.1em; }
+
+/* Password Inline Positioning Elements */
+.password-wrapper { position: relative; width: 100%; margin-bottom: 14px; }
+.auth-box input { width: 100%; padding: 14px 45px 14px 14px; background-color: var(--bg-primary); border: 1px solid var(--border); border-radius: 6px; color: white; font-size: 1.1rem; text-align: left; }
 .auth-box input:focus { border-color: var(--accent); outline: none; }
+.toggle-password { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 1.1rem; color: var(--text-muted); padding: 4px; }
+
 .hidden { display: none !important; }
