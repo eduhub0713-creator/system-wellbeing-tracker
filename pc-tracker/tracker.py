@@ -9,7 +9,7 @@ from datetime import datetime
 # =======================================================
 # 🔑 FIREBASE CONFIGURATION BINDINGS
 # =======================================================
-FIREBASE_DB_URL = "https://system-wellbeing-hub-rtdb.firebaseio.com"
+FIREBASE_DB_URL = "https://system-wellbeing-hub-default-rtdb.firebaseio.com"
 UNINSTALL_KEY = "##@@!!owner0813!!@@##"
 
 user32 = ctypes.windll.user32
