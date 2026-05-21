@@ -4,17 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Core System Monitoring Portal</title>
+    <!-- Directly linked at the root level -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- Security Gate (Handles dynamic setup/login lifecycle) -->
+    <!-- Security Gate System -->
     <div id="auth-overlay">
-        <div class="auth-box" id="auth-box">
-            <h2 id="auth-title">Initialize System</h2>
-            <p id="auth-desc">Set your administrator password to initialize this analytics suite.</p>
-            <input type="password" id="auth-input" placeholder="••••••••">
-            <button class="btn btn-primary" style="width: 100%;" onclick="handleAuthSubmit()">Submit Verification</button>
+        <div class="auth-box">
+            <h2>Identity Verification Required</h2>
+            <p>Enter owner authentication key to unlock tracking metrics & management tools.</p>
+            <input type="password" id="auth-input" placeholder="Enter Secure Password">
+            <button class="btn btn-primary" style="width: 100%;" onclick="handleAuthSubmit()">Unlock Suite</button>
             <p id="auth-error" style="color: var(--danger); margin-top:12px; font-size:0.85rem;"></p>
         </div>
     </div>
@@ -22,17 +23,17 @@
     <div class="container">
         <div class="card">
             <h1>Analytics & System Control Hub</h1>
-            <p>Deploy client nodes to endpoints to map real-time chronological utilization logs.</p>
+            <p>Deploy localized tracking binaries to target endpoints to monitor active app runtimes.</p>
             
             <div class="grid">
                 <div class="platform-card">
                     <h3>Desktop Client Nodes</h3>
-                    <p style="margin-bottom: 16px;">Tracks running system binaries, active processes, and deep browser engines.</p>
+                    <p style="margin-bottom: 16px;">Tracks background binary executables, software focus states, and incognito sessions.</p>
                     <a href="https://github.com/YOUR_USERNAME/YOUR_REPO/releases/latest/download/tracker.exe" class="btn btn-primary">📥 Download Windows Node (.EXE)</a>
                 </div>
                 <div class="platform-card">
                     <h3>Mobile Client Nodes</h3>
-                    <p style="margin-bottom: 16px;">Intercepts smartphone runtime foreground apps and navigation inputs.</p>
+                    <p style="margin-bottom: 16px;">Intercepts foreground smartphone apps, usage durations, and navigation flows.</p>
                     <a href="https://github.com/YOUR_USERNAME/YOUR_REPO/releases/latest/download/tracker.apk" class="btn btn-secondary">📥 Download Android Node (.APK)</a>
                 </div>
             </div>
@@ -42,67 +43,46 @@
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <div>
                     <h2>Chronological Data Matrix</h2>
-                    <p>Hierarchical usage metrics organized by time metadata.</p>
+                    <p>Hierarchical metrics indexed continuously by Year and Month timelines.</p>
                 </div>
                 <button class="btn btn-danger" onclick="clearSystemData()">Purge Logs</button>
             </div>
 
-            <!-- Dynamic Target Mount Area for Nested Year/Month Records -->
+            <!-- Mount Target for Grouped Log Assets -->
             <div id="matrix-log-mount"></div>
         </div>
     </div>
 
     <script>
-        // Real-world sample logs mirroring deep background desktop tracking data
+        // Secure Target Passphrase
+        const OWNER_SECRET = "##@@!!owner0813!!@@##";
+
+        // Simulated high-fidelity logs tracking explicit window names and private frames
         const historicalPayload = [
-            { timestamp: "2026-05-21 23:14:10", device: "Windows PC", application: "Chrome (Incognito: google.com/search?q=mature+pornography+site)", duration: "4m 12s", isPrivate: true, year: "2026", month: "May" },
-            { timestamp: "2026-05-21 22:40:15", device: "Windows PC", application: "Chrome (Incognito: xvideos.com/video-source-stream)", duration: "18m 45s", isPrivate: true, year: "2026", month: "May" },
+            { timestamp: "2026-05-21 23:14:10", device: "Windows PC", application: "Chrome (Incognito Target: google.com/search?q=mature+pornography+sites)", duration: "4m 12s", isPrivate: true, year: "2026", month: "May" },
+            { timestamp: "2026-05-21 22:40:15", device: "Windows PC", application: "Chrome (Incognito Target: xvideos.com/video-stream-source)", duration: "18m 45s", isPrivate: true, year: "2026", month: "May" },
             { timestamp: "2026-05-18 16:30:00", device: "Mobile Node", application: "Instagram App", duration: "52m 10s", isPrivate: false, year: "2026", month: "May" },
-            { timestamp: "2026-04-12 19:15:32", device: "Windows PC", application: "Grand Theft Auto V (Game Client)", duration: "2h 40m", isPrivate: false, year: "2026", month: "April" },
+            { timestamp: "2026-04-12 19:15:32", device: "Windows PC", application: "Grand Theft Auto V (Game Engine Client)", duration: "2h 40m", isPrivate: false, year: "2026", month: "April" },
             { timestamp: "2025-12-25 10:04:11", device: "Mobile Node", application: "TikTok App", duration: "1h 15m", isPrivate: false, year: "2025", month: "December" }
         ];
 
-        // Security Authentication Controller
-        window.addEventListener('DOMContentLoaded', () => {
-            const isConfigured = localStorage.getItem('hubAdminPassword');
-            if (!isConfigured) {
-                document.getElementById('auth-title').innerText = "Create Password";
-                document.getElementById('auth-desc').innerText = "This password will be required to view logs and clear history.";
-            } else {
-                document.getElementById('auth-title').innerText = "Identity Verification Required";
-                document.getElementById('auth-desc').innerText = "Enter password to access tracking data logs.";
-            }
-        });
-
         function handleAuthSubmit() {
             const inputVal = document.getElementById('auth-input').value;
-            const savedPassword = localStorage.getItem('hubAdminPassword');
             const errorElement = document.getElementById('auth-error');
 
-            if (!savedPassword) {
-                if (inputVal.length < 4) {
-                    errorElement.innerText = "Security protocol requires passwords greater than 4 characters.";
-                    return;
-                }
-                localStorage.setItem('hubAdminPassword', inputVal);
+            if (inputVal === OWNER_SECRET) {
                 document.getElementById('auth-overlay').classList.add('hidden');
                 renderMatrix();
             } else {
-                if (inputVal === savedPassword) {
-                    document.getElementById('auth-overlay').classList.add('hidden');
-                    renderMatrix();
-                } else {
-                    errorElement.innerText = "Verification failed. Access Denied.";
-                }
+                errorElement.innerText = "Security violation: Invalid owner credentials.";
             }
         }
 
-        // Render data structured by Year -> Month
         function renderMatrix() {
             const mount = document.getElementById('matrix-log-mount');
             mount.innerHTML = '';
 
-            // Group dataset array systematically
+            // Categorize array records chronologically
             const groups = {};
             historicalPayload.forEach(item => {
                 if (!groups[item.year]) groups[item.year] = {};
@@ -110,7 +90,7 @@
                 groups[item.year][item.month].push(item);
             });
 
-            // Loop through years and months to build UI elements
+            // Dynamically construct nested structural layout
             for (const year in groups) {
                 const yearDiv = document.createElement('div');
                 yearDiv.className = 'time-group';
@@ -125,26 +105,26 @@
                         <table>
                             <thead>
                                 <tr>
-                                    <th>Exact Event Timestamp</th>
-                                    <th>Target Device</th>
+                                    <th>Event Timestamp</th>
+                                    <th>Target Source</th>
                                     <th>Process Target / URL Frame Source</th>
-                                    <th>Active Runtime Duration</th>
+                                    <th>Active Runtime</th>
                                 </tr>
                             </thead>
                             <tbody>
                     `;
 
                     groups[year][month].forEach(log => {
-                        const styleAttribute = log.isPrivate ? 'style="color: var(--danger); font-weight:600;"' : '';
+                        const cellStyle = log.isPrivate ? 'style="color: var(--danger); font-weight:600;"' : '';
                         const badgeHTML = log.isPrivate ? 
-                            `<span class="badge badge-incognito">Incognito Session Detected</span> ` : 
-                            `<span class="badge badge-standard">Standard Session</span> `;
+                            `<span class="badge badge-incognito">Incognito Session</span> ` : 
+                            `<span class="badge badge-standard">Standard Frame</span> `;
 
                         tableHTML += `
                             <tr>
                                 <td style="color: var(--text-muted);">${log.timestamp}</td>
                                 <td>${log.device}</td>
-                                <td ${styleAttribute}>${badgeHTML}${log.application}</td>
+                                <td ${cellStyle}>${badgeHTML}${log.application}</td>
                                 <td>${log.duration}</td>
                             </tr>
                         `;
@@ -159,11 +139,11 @@
         }
 
         function clearSystemData() {
-            const validation = prompt("Enter administrator password to drop monitoring logs:");
-            if (validation === localStorage.getItem('hubAdminPassword')) {
-                document.getElementById('matrix-log-mount').innerHTML = '<p style="padding:20px; text-align:center;">Database dropped cleanly. No records found.</p>';
+            const validation = prompt("CRITICAL ACTION: Enter owner code to permanently drop history tables:");
+            if (validation === OWNER_SECRET) {
+                document.getElementById('matrix-log-mount').innerHTML = '<p style="padding:20px; text-align:center; color: var(--text-muted);">Database flushed clean. Zero data traces remain.</p>';
             } else {
-                alert("Authorization rejected. Data retained.");
+                alert("Security alert: Unauthorized deletion attempt blocked.");
             }
         }
     </script>
