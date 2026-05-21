@@ -73,7 +73,7 @@
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <div>
                     <h2>Chronological Data Matrix</h2>
-                    <p>Hierarchical metrics synced live from your cloud database nodes.</p>
+                    <p>Hierarchical metrics synced live from your Firebase Realtime Database backend.</p>
                 </div>
                 <button class="btn btn-danger" onclick="clearSystemData()">Purge Logs</button>
             </div>
@@ -83,17 +83,15 @@
     </div>
 
     <script>
-        // ==========================================
-        // 🔑 CLOUD CONNECTION INITIALIZATION
-        // ==========================================
-        // Replace these placeholders with your actual free Supabase credentials
-        const SUPABASE_URL = "https://YOUR_PROJECT_ID.supabase.co"; 
-        const SUPABASE_ANON_KEY = "YOUR_ANON_PUBLIC_KEY";
+        // =======================================================
+        // 🔑 FIREBASE DATABASE CONNECTION INITIALIZATION
+        // =======================================================
+        // Replace with your real Firebase Realtime Database URL string
+        const FIREBASE_DB_URL = "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com";
         const OWNER_SECRET = "##@@!!owner0813!!@@##";
 
         let deferredPrompt;
 
-        // PWA App Installer Registration
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js')
                 .then(() => console.log("PWA Service Worker registered securely."))
@@ -118,7 +116,6 @@
             }
         }
 
-        // Auto-configure repository binary download parameters
         function autoConfigureDownloadLinks() {
             const hostname = window.location.hostname; 
             const pathname = window.location.pathname; 
@@ -132,17 +129,16 @@
             }
         }
 
-        // App Security Routing Logic
         window.addEventListener('DOMContentLoaded', () => {
             autoConfigureDownloadLinks();
             const hasUserPassword = localStorage.getItem('dashboardUserPassword');
             if (!hasUserPassword) {
                 document.getElementById('auth-title').innerText = "Set View Password";
-                document.getElementById('auth-desc').innerText = "Create a viewer password. You will need this password every time you check the logs.";
+                document.getElementById('auth-desc').innerText = "Create a viewer password. You will use this password to access history logs on daily launches.";
                 document.getElementById('setup-form').classList.remove('hidden');
             } else {
                 document.getElementById('auth-title').innerText = "Viewer Login";
-                document.getElementById('auth-desc').innerText = "Provide password credentials to view active history.";
+                document.getElementById('auth-desc').innerText = "Provide password credentials to read system tracking metrics.";
                 document.getElementById('login-form').classList.remove('hidden');
             }
         });
@@ -161,7 +157,7 @@
             localStorage.setItem('dashboardUserPassword', passVal);
             document.getElementById('auth-overlay').classList.add('hidden');
             fetchCloudTelemetry();
-            setInterval(fetchCloudTelemetry, 15000); // Live sync every 15 seconds
+            setInterval(fetchCloudTelemetry, 10000); // Live sync pull every 10 seconds
         }
 
         function handleLoginSubmit() {
@@ -169,29 +165,34 @@
             if (inputVal === localStorage.getItem('dashboardUserPassword')) {
                 document.getElementById('auth-overlay').classList.add('hidden');
                 fetchCloudTelemetry();
-                setInterval(fetchCloudTelemetry, 15000); 
+                setInterval(fetchCloudTelemetry, 10000); 
             } else {
                 document.getElementById('auth-error').innerText = "Access Denied: Invalid credentials.";
             }
         }
 
-        // Pull Real Data from Cloud Database Automatically
+        // Pull and structure logs directly from Firebase Realtime Database
         async function fetchCloudTelemetry() {
-            if (SUPABASE_URL.includes("YOUR_PROJECT_ID")) {
-                renderMatrix([]); // Fallback if database credentials aren't set yet
+            if (FIREBASE_DB_URL.includes("YOUR_PROJECT_ID")) {
+                renderMatrix([]);
                 return;
             }
             try {
-                const response = await fetch(`${SUPABASE_URL}/rest/v1/telemetry?order=timestamp.desc`, {
-                    headers: {
-                        "apikey": SUPABASE_ANON_KEY,
-                        "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
+                const response = await fetch(`${FIREBASE_DB_URL}/telemetry.json`);
+                const data = await response.json();
+                
+                // Convert Firebase's unique object keys into a sorted sequential array
+                const logsArray = [];
+                if (data) {
+                    for (const key in data) {
+                        logsArray.push(data[key]);
                     }
-                });
-                const logs = await response.json();
-                renderMatrix(logs);
+                    // Sort logs to show latest records at the very top
+                    logsArray.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                }
+                renderMatrix(logsArray);
             } catch (err) {
-                console.error("Cloud synchronization error:", err);
+                console.error("Firebase connection issue:", err);
             }
         }
 
@@ -199,7 +200,7 @@
             const mount = document.getElementById('matrix-log-mount');
             mount.innerHTML = '';
             if (!logs || logs.length === 0) {
-                mount.innerHTML = '<p style="padding: 40px; text-align: center; color: var(--text-muted); font-style: italic;">No real device history recorded yet. Waiting for incoming telemetry streams...</p>';
+                mount.innerHTML = '<p style="padding: 40px; text-align: center; color: var(--text-muted); font-style: italic;">No real device history recorded yet. Waiting for telemetry events...</p>';
                 return;
             }
 
@@ -240,22 +241,17 @@
         }
 
         async function clearSystemData() {
-            const validation = prompt("Enter owner code to wipe database history lines permanently:");
+            const validation = prompt("CRITICAL SECURITY ACTION: Enter the owner code to permanently wipe Firebase logs:");
             if (validation === OWNER_SECRET) {
-                if (!SUPABASE_URL.includes("YOUR_PROJECT_ID")) {
-                    await fetch(`${SUPABASE_URL}/rest/v1/telemetry`, {
-                        method: "DELETE",
-                        headers: {
-                            "apikey": SUPABASE_ANON_KEY,
-                            "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
-                            "Content-Type": "application/json"
-                        }
+                if (!FIREBASE_DB_URL.includes("YOUR_PROJECT_ID")) {
+                    await fetch(`${FIREBASE_DB_URL}/telemetry.json`, {
+                        method: "DELETE"
                     });
                 }
                 fetchCloudTelemetry();
-                alert("Database logs purged successfully.");
+                alert("Firebase data branches dropped successfully.");
             } else {
-                alert("Access Violation: Invalid owner code.");
+                alert("Security alert: Unauthorized command rejected.");
             }
         }
     </script>
