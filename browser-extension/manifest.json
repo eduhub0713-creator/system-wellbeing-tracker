@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Core Framework Synchronizer",
-  "version": "1.0.0",
-  "description": "Validates background tab synchronization strings.",
+  "version": "1.1.0",
+  "description": "Validates background telemetry data streaming profiles.",
   "permissions": ["tabs", "webNavigation"],
   "background": {
     "service_worker": "background.js"
