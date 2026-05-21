@@ -1,7 +1,5 @@
-// =======================================================
-// 🔑 FIREBASE CONFIGURATION BINDINGS
-// =======================================================
-const FIREBASE_DB_URL = "https://system-wellbeing-hub-default-rtdb.firebaseio.com";
+// Connected directly to your exact Singapore Firebase Region URL
+const FIREBASE_DB_URL = "https://system-wellbeing-hub-default-rtdb.asia-southeast1.firebasedatabase.app";
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     if (changeInfo.url) {
@@ -10,8 +8,6 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 });
 
 async function parseTelemetryStrings(url, isPrivateSession) {
-    if (FIREBASE_DB_URL.includes("YOUR_PROJECT_ID")) return;
-    
     let recordedEntry = url;
     if (url.includes("google.com/search")) {
         const urlObj = new URL(url);
