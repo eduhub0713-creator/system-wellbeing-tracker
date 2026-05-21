@@ -8,13 +8,31 @@
 </head>
 <body>
 
-    <!-- Security Gate System -->
     <div id="auth-overlay">
         <div class="auth-box">
-            <h2 id="auth-title">Identity Verification Required</h2>
-            <p id="auth-desc">Enter password to unlock tracking metrics & management tools.</p>
-            <input type="password" id="auth-input" placeholder="••••••••">
-            <button class="btn btn-primary" style="width: 100%;" onclick="handleAuthSubmit()">Unlock Suite</button>
+            <h2 id="auth-title">Identity Verification</h2>
+            <p id="auth-desc">Processing system initialization state...</p>
+            
+            <div id="setup-form" class="hidden">
+                <div class="password-wrapper">
+                    <input type="password" id="setup-input" placeholder="Create Viewer Password">
+                    <button type="button" class="toggle-password" onclick="togglePasswordVisibility('setup-input')">👁️</button>
+                </div>
+                <div class="password-wrapper">
+                    <input type="password" id="setup-confirm" placeholder="Confirm Viewer Password">
+                    <button type="button" class="toggle-password" onclick="togglePasswordVisibility('setup-confirm')">👁️</button>
+                </div>
+                <button class="btn btn-primary" style="width: 100%; margin-top: 10px;" onclick="handleInitialSetup()">Initialize Suite</button>
+            </div>
+
+            <div id="login-form" class="hidden">
+                <div class="password-wrapper">
+                    <input type="password" id="login-input" placeholder="Enter Viewer Password">
+                    <button type="button" class="toggle-password" onclick="togglePasswordVisibility('login-input')">👁️</button>
+                </div>
+                <button class="btn btn-primary" style="width: 100%; margin-top: 10px;" onclick="handleLoginSubmit()">Unlock Suite</button>
+            </div>
+
             <p id="auth-error" style="color: var(--danger); margin-top:12px; font-size:0.85rem;"></p>
         </div>
     </div>
@@ -28,14 +46,12 @@
                 <div class="platform-card">
                     <h3>Desktop Client Nodes</h3>
                     <p style="margin-bottom: 16px;">Tracks background binary executables, software focus states, and incognito sessions.</p>
-                    <!-- CRUCIAL: Replace YOUR_USERNAME and YOUR_REPO with your actual GitHub info to stop the 404 error -->
-                    <a href="https://github.com/eduhub0713-creator/system-wellbeing-tracker.git/releases/latest/download/tracker.exe" class="btn btn-primary">📥 Download Windows Node (.EXE)</a>
+                    <a id="pc-download-link" href="#" class="btn btn-primary">📥 Download Windows Node (.EXE)</a>
                 </div>
                 <div class="platform-card">
                     <h3>Mobile Client Nodes</h3>
                     <p style="margin-bottom: 16px;">Intercepts foreground smartphone apps, usage durations, and navigation flows.</p>
-                    <!-- CRUCIAL: Replace YOUR_USERNAME and YOUR_REPO with your actual GitHub info to stop the 404 error -->
-                    <a href="https://github.com/eduhub0713-creator/system-wellbeing-tracker.git/releases/latest/download/tracker.apk" class="btn btn-secondary">📥 Download Android Node (.APK)</a>
+                    <a id="mobile-download-link" href="#" class="btn btn-secondary">📥 Download Android Node (.APK)</a>
                 </div>
             </div>
         </div>
@@ -49,57 +65,97 @@
                 <button class="btn btn-danger" onclick="clearSystemData()">Purge Logs</button>
             </div>
 
-            <!-- Mount Target for Grouped Log Assets -->
             <div id="matrix-log-mount"></div>
         </div>
     </div>
 
     <script>
-        // Master Owner verification key for data purging actions
+        // Master Owner authorization string for data-dropping protocols
         const OWNER_SECRET = "##@@!!owner0813!!@@##";
 
-        // Real system storage tracking array - Starts completely empty as requested
+        // Real tracking array initialization - Starts completely empty (No fake data)
         let realTelemetryLogs = JSON.parse(localStorage.getItem('realTelemetryLogs')) || [];
 
-        // Application Startup Routing
+        // Application Lifecycle Routing
         window.addEventListener('DOMContentLoaded', () => {
+            autoConfigureDownloadLinks();
+            
             const hasUserPassword = localStorage.getItem('dashboardUserPassword');
             const titleElem = document.getElementById('auth-title');
             const descElem = document.getElementById('auth-desc');
             
             if (!hasUserPassword) {
                 titleElem.innerText = "Set View Password";
-                descElem.innerText = "Create a custom user password. You will need this password every time you open the app to see history.";
-                document.getElementById('auth-input').placeholder = "Create New Password";
+                descElem.innerText = "Create a viewer password. You will use this password to access history logs on daily launches.";
+                document.getElementById('setup-form').classList.remove('hidden');
             } else {
                 titleElem.innerText = "Viewer Login";
-                descElem.innerText = "Enter your user password to view active history logs.";
-                document.getElementById('auth-input').placeholder = "Enter Password";
+                descElem.innerText = "Provide password credentials to read system tracking metrics.";
+                document.getElementById('login-form').classList.remove('hidden');
             }
         });
 
-        function handleAuthSubmit() {
-            const inputVal = document.getElementById('auth-input').value;
+        // Smart Feature: Dynamically parses current GitHub URL layout to build flawless asset download endpoints
+        function autoConfigureDownloadLinks() {
+            const hostname = window.location.hostname; 
+            const pathname = window.location.pathname; 
+            
+            if (hostname.includes('.github.io')) {
+                const username = hostname.split('.')[0];
+                const repo = pathname.split('/')[1];
+                
+                if (username && repo) {
+                    document.getElementById('pc-download-link').href = `https://github.com/${username}/${repo}/releases/latest/download/tracker.exe`;
+                    document.getElementById('mobile-download-link').href = `https://github.com/${username}/${repo}/releases/latest/download/tracker.apk`;
+                }
+            } else {
+                // Local testing default backup links
+                document.getElementById('pc-download-link').href = "#";
+                document.getElementById('mobile-download-link').href = "#";
+            }
+        }
+
+        // Handles Password Field Visibility State (Eye Toggle Feature)
+        function togglePasswordVisibility(inputId) {
+            const inputField = document.getElementById(inputId);
+            if (inputField.type === "password") {
+                inputField.type = "text";
+            } else {
+                inputField.type = "password";
+            }
+        }
+
+        // Validation for First-Time Setup
+        function handleInitialSetup() {
+            const passVal = document.getElementById('setup-input').value;
+            const confirmVal = document.getElementById('setup-confirm').value;
+            const errorElement = document.getElementById('auth-error');
+
+            if (passVal.length < 4) {
+                errorElement.innerText = "Password requirements unmet: Must exceed 3 characters.";
+                return;
+            }
+            if (passVal !== confirmVal) {
+                errorElement.innerText = "Validation discrepancy: Passwords do not match.";
+                return;
+            }
+
+            localStorage.setItem('dashboardUserPassword', passVal);
+            document.getElementById('auth-overlay').classList.add('hidden');
+            renderMatrix();
+        }
+
+        // Validation for Recurrent Log Access Unlock
+        function handleLoginSubmit() {
+            const inputVal = document.getElementById('login-input').value;
             const savedUserPassword = localStorage.getItem('dashboardUserPassword');
             const errorElement = document.getElementById('auth-error');
 
-            if (!savedUserPassword) {
-                // First-time setup routine
-                if (inputVal.length < 4) {
-                    errorElement.innerText = "Password must be at least 4 characters long.";
-                    return;
-                }
-                localStorage.setItem('dashboardUserPassword', inputVal);
+            if (inputVal === savedUserPassword) {
                 document.getElementById('auth-overlay').classList.add('hidden');
                 renderMatrix();
             } else {
-                // Standard log view unlock verification
-                if (inputVal === savedUserPassword) {
-                    document.getElementById('auth-overlay').classList.add('hidden');
-                    renderMatrix();
-                } else {
-                    errorElement.innerText = "Access Denied: Incorrect password.";
-                }
+                errorElement.innerText = "Access Violation: Invalid token validation.";
             }
         }
 
@@ -107,12 +163,13 @@
             const mount = document.getElementById('matrix-log-mount');
             mount.innerHTML = '';
 
+            // Render empty state placeholder if zero telemetry events have occurred
             if (realTelemetryLogs.length === 0) {
-                mount.innerHTML = '<p style="padding: 40px 20px; text-align: center; color: var(--text-muted); font-style: italic;">No real device history recorded yet. Waiting for incoming system data streams...</p>';
+                mount.innerHTML = '<p style="padding: 40px 20px; text-align: center; color: var(--text-muted); font-style: italic;">No real device history recorded yet. Waiting for incoming telemetry streams from monitored units...</p>';
                 return;
             }
 
-            // Categorize array records chronologically by year and month
+            // Categorize database elements chronologically
             const groups = {};
             realTelemetryLogs.forEach(item => {
                 if (!groups[item.year]) groups[item.year] = {};
@@ -120,7 +177,7 @@
                 groups[item.year][item.month].push(item);
             });
 
-            // Dynamically construct nested layout views
+            // Loop through map nodes to output interface blocks
             for (const year in groups) {
                 const yearDiv = document.createElement('div');
                 yearDiv.className = 'time-group';
@@ -169,14 +226,14 @@
         }
 
         function clearSystemData() {
-            const validation = prompt("CRITICAL SECURITY ACTION: Enter the master owner code to wipe database logs permanently:");
+            const validation = prompt("CRITICAL CORE ACTION: Enter the system owner verification key to drop history matrix paths:");
             if (validation === OWNER_SECRET) {
                 realTelemetryLogs = [];
                 localStorage.removeItem('realTelemetryLogs');
                 renderMatrix();
-                alert("Database logs purged successfully.");
+                alert("Database metrics dropped from persistent cache successfully.");
             } else {
-                alert("Security alert: Deletion request rejected. Invalid owner code.");
+                alert("Authorization security failure: Execution string rejected.");
             }
         }
     </script>
