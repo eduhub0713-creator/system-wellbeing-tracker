@@ -4,7 +4,7 @@
   "short_name": "SystemHub",
   "start_url": "index.html",
   "display": "standalone",
-  "background_color: ": #080b11",
+  "background_color": "#080b11",
   "theme_color": "#111827",
   "orientation": "portrait-primary",
   "icons": [
