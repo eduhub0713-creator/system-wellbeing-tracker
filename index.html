@@ -83,11 +83,8 @@
     </div>
 
     <script>
-        // =======================================================
-        // 🔑 FIREBASE DATABASE CONNECTION INITIALIZATION
-        // =======================================================
-        // Replace with your real Firebase Realtime Database URL string
-        const FIREBASE_DB_URL = "https://system-wellbeing-hub-default-rtdb.firebaseio.com";
+        // Connected directly to your exact Singapore Firebase Region URL
+        const FIREBASE_DB_URL = "https://system-wellbeing-hub-default-rtdb.asia-southeast1.firebasedatabase.app";
         const OWNER_SECRET = "##@@!!owner0813!!@@##";
 
         let deferredPrompt;
@@ -157,7 +154,7 @@
             localStorage.setItem('dashboardUserPassword', passVal);
             document.getElementById('auth-overlay').classList.add('hidden');
             fetchCloudTelemetry();
-            setInterval(fetchCloudTelemetry, 10000); // Live sync pull every 10 seconds
+            setInterval(fetchCloudTelemetry, 10000); 
         }
 
         function handleLoginSubmit() {
@@ -171,23 +168,16 @@
             }
         }
 
-        // Pull and structure logs directly from Firebase Realtime Database
         async function fetchCloudTelemetry() {
-            if (FIREBASE_DB_URL.includes("YOUR_PROJECT_ID")) {
-                renderMatrix([]);
-                return;
-            }
             try {
                 const response = await fetch(`${FIREBASE_DB_URL}/telemetry.json`);
                 const data = await response.json();
                 
-                // Convert Firebase's unique object keys into a sorted sequential array
                 const logsArray = [];
                 if (data) {
                     for (const key in data) {
                         logsArray.push(data[key]);
                     }
-                    // Sort logs to show latest records at the very top
                     logsArray.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
                 }
                 renderMatrix(logsArray);
@@ -243,11 +233,7 @@
         async function clearSystemData() {
             const validation = prompt("CRITICAL SECURITY ACTION: Enter the owner code to permanently wipe Firebase logs:");
             if (validation === OWNER_SECRET) {
-                if (!FIREBASE_DB_URL.includes("YOUR_PROJECT_ID")) {
-                    await fetch(`${FIREBASE_DB_URL}/telemetry.json`, {
-                        method: "DELETE"
-                    });
-                }
+                await fetch(`${FIREBASE_DB_URL}/telemetry.json`, { method: "DELETE" });
                 fetchCloudTelemetry();
                 alert("Firebase data branches dropped successfully.");
             } else {
