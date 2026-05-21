@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="style.css">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/6813/6813733.png">
     <link rel="manifest" href="app.webmanifest">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
 
@@ -75,7 +76,11 @@
                     <h2>Chronological Data Matrix</h2>
                     <p>Hierarchical metrics synced live from your Firebase Realtime Database backend.</p>
                 </div>
-                <button class="btn btn-danger" onclick="clearSystemData()">Purge Logs</button>
+                <div class="action-button-group">
+                    <button class="btn btn-primary" onclick="fetchCloudTelemetry()">🔄 Refresh Now</button>
+                    <button class="btn btn-share" onclick="sharePdfReport()">📤 Share PDF Report</button>
+                    <button class="btn btn-danger" onclick="clearSystemData()">Purge Logs</button>
+                </div>
             </div>
 
             <div id="matrix-log-mount"></div>
@@ -83,34 +88,22 @@
     </div>
 
     <script>
-        // Connected directly to your exact Singapore Firebase Region URL
         const FIREBASE_DB_URL = "https://system-wellbeing-hub-default-rtdb.asia-southeast1.firebasedatabase.app";
         const OWNER_SECRET = "##@@!!owner0813!!@@##";
-
         let deferredPrompt;
+        let liveSyncTimer = null;
 
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js')
-                .then(() => console.log("PWA Service Worker registered securely."))
-                .catch(err => console.log("Service Worker configuration failed:", err));
+            navigator.serviceWorker.register('sw.js').catch(err => console.log(err));
         }
 
         window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
+            e.preventDefault(); deferredPrompt = e;
             document.getElementById('pwa-install-banner').classList.remove('hidden');
         });
 
         function triggerPwaInstallation() {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                deferredPrompt.userChoice.then((choiceResult) => {
-                    if (choiceResult.outcome === 'accepted') {
-                        document.getElementById('pwa-install-banner').classList.add('hidden');
-                    }
-                    deferredPrompt = null;
-                });
-            }
+            if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt = null; }
         }
 
         function autoConfigureDownloadLinks() {
@@ -131,113 +124,144 @@
             const hasUserPassword = localStorage.getItem('dashboardUserPassword');
             if (!hasUserPassword) {
                 document.getElementById('auth-title').innerText = "Set View Password";
-                document.getElementById('auth-desc').innerText = "Create a viewer password. You will use this password to access history logs on daily launches.";
                 document.getElementById('setup-form').classList.remove('hidden');
             } else {
                 document.getElementById('auth-title').innerText = "Viewer Login";
-                document.getElementById('auth-desc').innerText = "Provide password credentials to read system tracking metrics.";
                 document.getElementById('login-form').classList.remove('hidden');
             }
         });
 
-        function togglePasswordVisibility(inputId) {
-            const field = document.getElementById(inputId);
-            field.type = field.type === "password" ? "text" : "password";
+        function togglePasswordVisibility(id) {
+            const f = document.getElementById(id); f.type = f.type === "password" ? "text" : "password";
         }
 
         function handleInitialSetup() {
-            const passVal = document.getElementById('setup-input').value;
-            const confirmVal = document.getElementById('setup-confirm').value;
-            const err = document.getElementById('auth-error');
-            if (passVal.length < 4) { err.innerText = "Password must be at least 4 characters."; return; }
-            if (passVal !== confirmVal) { err.innerText = "Passwords do not match."; return; }
-            localStorage.setItem('dashboardUserPassword', passVal);
+            const p = document.getElementById('setup-input').value;
+            const c = document.getElementById('setup-confirm').value;
+            if (p.length < 4) return;
+            if (p !== c) { document.getElementById('auth-error').innerText = "Passwords do not match."; return; }
+            localStorage.setItem('dashboardUserPassword', p);
             document.getElementById('auth-overlay').classList.add('hidden');
-            fetchCloudTelemetry();
-            setInterval(fetchCloudTelemetry, 10000); 
+            activateLiveDashboard();
         }
 
         function handleLoginSubmit() {
-            const inputVal = document.getElementById('login-input').value;
-            if (inputVal === localStorage.getItem('dashboardUserPassword')) {
+            if (document.getElementById('login-input').value === localStorage.getItem('dashboardUserPassword')) {
                 document.getElementById('auth-overlay').classList.add('hidden');
-                fetchCloudTelemetry();
-                setInterval(fetchCloudTelemetry, 10000); 
+                activateLiveDashboard();
             } else {
-                document.getElementById('auth-error').innerText = "Access Denied: Invalid credentials.";
+                document.getElementById('auth-error').innerText = "Access Denied: Incorrect Password.";
             }
+        }
+
+        // Activates the stream data rendering loops upon verification
+        function activateLiveDashboard() {
+            fetchCloudTelemetry();
+            if (liveSyncTimer) clearInterval(liveSyncTimer);
+            // Safe 30-Second Refresh loop to show lively data without breaking quotas
+            liveSyncTimer = setInterval(fetchCloudTelemetry, 30000);
         }
 
         async function fetchCloudTelemetry() {
             try {
                 const response = await fetch(`${FIREBASE_DB_URL}/telemetry.json`);
                 const data = await response.json();
-                
                 const logsArray = [];
                 if (data) {
-                    for (const key in data) {
-                        logsArray.push(data[key]);
-                    }
+                    for (const key in data) { logsArray.push(data[key]); }
                     logsArray.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
                 }
-                renderMatrix(logsArray);
-            } catch (err) {
-                console.error("Firebase connection issue:", err);
-            }
+                renderCategorizedMatrix(logsArray);
+            } catch (err) { console.error("Database connection dropped:", err); }
         }
 
-        function renderMatrix(logs) {
+        function determineCategory(appString) {
+            const str = appString.toLowerCase();
+            if (str.includes("porn") || str.includes("xvideos") || str.includes("mature") || str.includes("incognito")) return "🛑 Restricted/Adult Content";
+            if (str.includes("instagram") || str.includes("tiktok") || str.includes("facebook") || str.includes("twitter") || str.includes("reddit")) return "📱 Social Media";
+            if (str.includes("discord") || str.includes("telegram") || str.includes("game") || str.includes("steam") || str.includes("gta")) return "🎮 Gaming & Messaging";
+            if (str.includes("google search") || str.includes("search")) return "🔍 Web Search Queries";
+            return "📑 General Productivity/System";
+        }
+
+        function renderCategorizedMatrix(logs) {
             const mount = document.getElementById('matrix-log-mount');
             mount.innerHTML = '';
             if (!logs || logs.length === 0) {
-                mount.innerHTML = '<p style="padding: 40px; text-align: center; color: var(--text-muted); font-style: italic;">No real device history recorded yet. Waiting for telemetry events...</p>';
+                mount.innerHTML = '<p style="padding:40px; text-align:center; color:var(--text-muted); font-style:italic;">No target data logs active. Waiting for device smart-batches...</p>';
                 return;
             }
 
-            const groups = {};
+            const chronologicalGroups = {};
             logs.forEach(item => {
                 const dateObj = new Date(item.timestamp);
                 const year = dateObj.getFullYear().toString();
                 const month = dateObj.toLocaleString('default', { month: 'long' });
+                const category = determineCategory(item.application);
                 const timeStr = dateObj.toLocaleTimeString();
 
-                if (!groups[year]) groups[year] = {};
-                if (!groups[year][month]) groups[year][month] = [];
-                groups[year][month].push({ ...item, timeLabel: timeStr });
+                if (!chronologicalGroups[year]) chronologicalGroups[year] = {};
+                if (!chronologicalGroups[year][month]) chronologicalGroups[year][month] = {};
+                if (!chronologicalGroups[year][month][category]) chronologicalGroups[year][month][category] = [];
+                
+                chronologicalGroups[year][month][category].push({ ...item, timeLabel: timeStr });
             });
 
-            for (const year in groups) {
+            for (const year in chronologicalGroups) {
                 const yearDiv = document.createElement('div');
                 yearDiv.className = 'time-group';
                 yearDiv.innerHTML = `<div class="year-header">${year}</div>`;
-                for (const month in groups[year]) {
+
+                for (const month in chronologicalGroups[year]) {
                     const monthDiv = document.createElement('div');
                     monthDiv.className = 'month-group';
                     monthDiv.innerHTML = `<div class="month-header">${month}</div>`;
-                    let tableHTML = `<table><thead><tr><th>Time</th><th>Source</th><th>Application/URL</th><th>Duration</th></tr></thead><tbody>`;
-                    
-                    groups[year][month].forEach(log => {
-                        const cellStyle = log.is_private ? 'style="color: var(--danger); font-weight:600;"' : '';
-                        const badgeHTML = log.is_private ? `<span class="badge badge-incognito">Incognito</span> ` : `<span class="badge badge-standard">Standard</span> `;
-                        tableHTML += `<tr><td>${log.timeLabel}</td><td>${log.device}</td><td ${cellStyle}>${badgeHTML}${log.application}</td><td>${log.duration}s</td></tr>`;
-                    });
-                    
-                    tableHTML += `</tbody></table>`;
-                    monthDiv.innerHTML += tableHTML;
+
+                    for (const category in chronologicalGroups[year][month]) {
+                        const catWrapper = document.createElement('div');
+                        catWrapper.style.margin = "15px 0 10px 10px";
+                        catWrapper.innerHTML = `<h3 style="color:var(--accent); font-size:1rem; margin-bottom:6px;">${category}</h3>`;
+                        
+                        let tableHTML = `<table><thead><tr><th style="width:20%;">Time</th><th style="width:20%;">Device</th><th>Active Process Frame Target</th><th style="width:15%;">Duration</th></tr></thead><tbody>`;
+                        
+                        chronologicalGroups[year][month][category].forEach(log => {
+                            const cellStyle = log.is_private ? 'style="color: var(--danger); font-weight:600;"' : '';
+                            const badgeHTML = log.is_private ? `<span class="badge badge-incognito">Incognito</span> ` : `<span class="badge badge-standard">Standard</span> `;
+                            tableHTML += `<tr><td>${log.timeLabel}</td><td>${log.device}</td><td ${cellStyle}>${badgeHTML}${log.application}</td><td>${log.duration}s</td></tr>`;
+                        });
+                        
+                        tableHTML += `</tbody></table>`;
+                        catWrapper.innerHTML += tableHTML;
+                        monthDiv.appendChild(catWrapper);
+                    }
                     yearDiv.appendChild(monthDiv);
                 }
                 mount.appendChild(yearDiv);
             }
         }
 
+        async function sharePdfReport() {
+            const element = document.getElementById('matrix-log-mount');
+            const targetFilename = 'SystemHub_Wellbeing_Report.pdf';
+            const pdfConfiguration = {
+                margin: 12, filename: targetFilename, image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, backgroundColor: '#111827' }, 
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            try {
+                const pdfBlob = await html2pdf().set(pdfConfiguration).from(element).output('blob');
+                const fileObject = new File([pdfBlob], targetFilename, { type: 'application/pdf' });
+                if (navigator.canShare && navigator.canShare({ files: [fileObject] })) {
+                    await navigator.share({ files: [fileObject], title: 'System Activity Logs', text: 'Automated chronological timeline verification reports enclosed.' });
+                } else { html2pdf().set(pdfConfiguration).from(element).save(); }
+            } catch (err) { html2pdf().set(pdfConfiguration).from(element).save(); }
+        }
+
         async function clearSystemData() {
-            const validation = prompt("CRITICAL SECURITY ACTION: Enter the owner code to permanently wipe Firebase logs:");
-            if (validation === OWNER_SECRET) {
+            if (prompt("Enter owner code to wipe database:") === OWNER_SECRET) {
                 await fetch(`${FIREBASE_DB_URL}/telemetry.json`, { method: "DELETE" });
                 fetchCloudTelemetry();
-                alert("Firebase data branches dropped successfully.");
-            } else {
-                alert("Security alert: Unauthorized command rejected.");
+                alert("Database cleared.");
             }
         }
     </script>
