@@ -78,7 +78,8 @@
                 </div>
                 <div class="action-button-group">
                     <button class="btn btn-primary" onclick="fetchCloudTelemetry()">🔄 Refresh Now</button>
-                    <button class="btn btn-share" onclick="sharePdfReport()">📤 Share PDF Report</button>
+                    <button class="btn btn-secondary" onclick="downloadLocalPdfReport()">📥 Download PDF</button>
+                    <button class="btn btn-share" onclick="sharePdfReport()">📤 Share Report</button>
                     <button class="btn btn-danger" onclick="clearSystemData()">Purge Logs</button>
                 </div>
             </div>
@@ -121,10 +122,18 @@
 
         window.addEventListener('DOMContentLoaded', () => {
             autoConfigureDownloadLinks();
+            
+            // Check persistence state flags to optimize reopened application states
             const hasUserPassword = localStorage.getItem('dashboardUserPassword');
+            const isSessionUnlocked = sessionStorage.getItem('dashboardSessionActive');
+
             if (!hasUserPassword) {
                 document.getElementById('auth-title').innerText = "Set View Password";
                 document.getElementById('setup-form').classList.remove('hidden');
+            } else if (isSessionUnlocked === "true") {
+                // Skips authentication if application window layer was just put in background
+                document.getElementById('auth-overlay').classList.add('hidden');
+                activateLiveDashboard();
             } else {
                 document.getElementById('auth-title').innerText = "Viewer Login";
                 document.getElementById('login-form').classList.remove('hidden');
@@ -141,12 +150,14 @@
             if (p.length < 4) return;
             if (p !== c) { document.getElementById('auth-error').innerText = "Passwords do not match."; return; }
             localStorage.setItem('dashboardUserPassword', p);
+            sessionStorage.setItem('dashboardSessionActive', "true");
             document.getElementById('auth-overlay').classList.add('hidden');
             activateLiveDashboard();
         }
 
         function handleLoginSubmit() {
             if (document.getElementById('login-input').value === localStorage.getItem('dashboardUserPassword')) {
+                sessionStorage.setItem('dashboardSessionActive', "true");
                 document.getElementById('auth-overlay').classList.add('hidden');
                 activateLiveDashboard();
             } else {
@@ -154,11 +165,9 @@
             }
         }
 
-        // Activates the stream data rendering loops upon verification
         function activateLiveDashboard() {
             fetchCloudTelemetry();
             if (liveSyncTimer) clearInterval(liveSyncTimer);
-            // Safe 30-Second Refresh loop to show lively data without breaking quotas
             liveSyncTimer = setInterval(fetchCloudTelemetry, 30000);
         }
 
@@ -222,7 +231,7 @@
                         catWrapper.style.margin = "15px 0 10px 10px";
                         catWrapper.innerHTML = `<h3 style="color:var(--accent); font-size:1rem; margin-bottom:6px;">${category}</h3>`;
                         
-                        let tableHTML = `<table><thead><tr><th style="width:20%;">Time</th><th style="width:20%;">Device</th><th>Active Process Frame Target</th><th style="width:15%;">Duration</th></tr></thead><tbody>`;
+                        let tableHTML = `<table><thead><tr><th style="width:20%;">Time</th><th style="width:20%;">Device</th><th>Active Process Target</th><th style="width:15%;">Duration</th></tr></thead><tbody>`;
                         
                         chronologicalGroups[year][month][category].forEach(log => {
                             const cellStyle = log.is_private ? 'style="color: var(--danger); font-weight:600;"' : '';
@@ -238,6 +247,17 @@
                 }
                 mount.appendChild(yearDiv);
             }
+        }
+
+        // Feature: Compiles and triggers an immediate localized storage document download
+        function downloadLocalPdfReport() {
+            const element = document.getElementById('matrix-log-mount');
+            const config = {
+                margin: 12, filename: 'SystemHub_Local_Report.pdf', image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, backgroundColor: '#111827' },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            html2pdf().set(config).from(element).save();
         }
 
         async function sharePdfReport() {
