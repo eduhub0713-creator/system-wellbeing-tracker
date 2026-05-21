@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Core System Monitoring Portal</title>
-    <!-- Directly linked at the root level -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -12,9 +11,9 @@
     <!-- Security Gate System -->
     <div id="auth-overlay">
         <div class="auth-box">
-            <h2>Identity Verification Required</h2>
-            <p>Enter owner authentication key to unlock tracking metrics & management tools.</p>
-            <input type="password" id="auth-input" placeholder="Enter Secure Password">
+            <h2 id="auth-title">Identity Verification Required</h2>
+            <p id="auth-desc">Enter password to unlock tracking metrics & management tools.</p>
+            <input type="password" id="auth-input" placeholder="••••••••">
             <button class="btn btn-primary" style="width: 100%;" onclick="handleAuthSubmit()">Unlock Suite</button>
             <p id="auth-error" style="color: var(--danger); margin-top:12px; font-size:0.85rem;"></p>
         </div>
@@ -29,12 +28,14 @@
                 <div class="platform-card">
                     <h3>Desktop Client Nodes</h3>
                     <p style="margin-bottom: 16px;">Tracks background binary executables, software focus states, and incognito sessions.</p>
-                    <a href="https://github.com/YOUR_USERNAME/YOUR_REPO/releases/latest/download/tracker.exe" class="btn btn-primary">📥 Download Windows Node (.EXE)</a>
+                    <!-- CRUCIAL: Replace YOUR_USERNAME and YOUR_REPO with your actual GitHub info to stop the 404 error -->
+                    <a href="https://github.com/eduhub0713-creator/system-wellbeing-tracker.git/releases/latest/download/tracker.exe" class="btn btn-primary">📥 Download Windows Node (.EXE)</a>
                 </div>
                 <div class="platform-card">
                     <h3>Mobile Client Nodes</h3>
                     <p style="margin-bottom: 16px;">Intercepts foreground smartphone apps, usage durations, and navigation flows.</p>
-                    <a href="https://github.com/YOUR_USERNAME/YOUR_REPO/releases/latest/download/tracker.apk" class="btn btn-secondary">📥 Download Android Node (.APK)</a>
+                    <!-- CRUCIAL: Replace YOUR_USERNAME and YOUR_REPO with your actual GitHub info to stop the 404 error -->
+                    <a href="https://github.com/eduhub0713-creator/system-wellbeing-tracker.git/releases/latest/download/tracker.apk" class="btn btn-secondary">📥 Download Android Node (.APK)</a>
                 </div>
             </div>
         </div>
@@ -54,27 +55,51 @@
     </div>
 
     <script>
-        // Secure Target Passphrase
+        // Master Owner verification key for data purging actions
         const OWNER_SECRET = "##@@!!owner0813!!@@##";
 
-        // Simulated high-fidelity logs tracking explicit window names and private frames
-        const historicalPayload = [
-            { timestamp: "2026-05-21 23:14:10", device: "Windows PC", application: "Chrome (Incognito Target: google.com/search?q=mature+pornography+sites)", duration: "4m 12s", isPrivate: true, year: "2026", month: "May" },
-            { timestamp: "2026-05-21 22:40:15", device: "Windows PC", application: "Chrome (Incognito Target: xvideos.com/video-stream-source)", duration: "18m 45s", isPrivate: true, year: "2026", month: "May" },
-            { timestamp: "2026-05-18 16:30:00", device: "Mobile Node", application: "Instagram App", duration: "52m 10s", isPrivate: false, year: "2026", month: "May" },
-            { timestamp: "2026-04-12 19:15:32", device: "Windows PC", application: "Grand Theft Auto V (Game Engine Client)", duration: "2h 40m", isPrivate: false, year: "2026", month: "April" },
-            { timestamp: "2025-12-25 10:04:11", device: "Mobile Node", application: "TikTok App", duration: "1h 15m", isPrivate: false, year: "2025", month: "December" }
-        ];
+        // Real system storage tracking array - Starts completely empty as requested
+        let realTelemetryLogs = JSON.parse(localStorage.getItem('realTelemetryLogs')) || [];
+
+        // Application Startup Routing
+        window.addEventListener('DOMContentLoaded', () => {
+            const hasUserPassword = localStorage.getItem('dashboardUserPassword');
+            const titleElem = document.getElementById('auth-title');
+            const descElem = document.getElementById('auth-desc');
+            
+            if (!hasUserPassword) {
+                titleElem.innerText = "Set View Password";
+                descElem.innerText = "Create a custom user password. You will need this password every time you open the app to see history.";
+                document.getElementById('auth-input').placeholder = "Create New Password";
+            } else {
+                titleElem.innerText = "Viewer Login";
+                descElem.innerText = "Enter your user password to view active history logs.";
+                document.getElementById('auth-input').placeholder = "Enter Password";
+            }
+        });
 
         function handleAuthSubmit() {
             const inputVal = document.getElementById('auth-input').value;
+            const savedUserPassword = localStorage.getItem('dashboardUserPassword');
             const errorElement = document.getElementById('auth-error');
 
-            if (inputVal === OWNER_SECRET) {
+            if (!savedUserPassword) {
+                // First-time setup routine
+                if (inputVal.length < 4) {
+                    errorElement.innerText = "Password must be at least 4 characters long.";
+                    return;
+                }
+                localStorage.setItem('dashboardUserPassword', inputVal);
                 document.getElementById('auth-overlay').classList.add('hidden');
                 renderMatrix();
             } else {
-                errorElement.innerText = "Security violation: Invalid owner credentials.";
+                // Standard log view unlock verification
+                if (inputVal === savedUserPassword) {
+                    document.getElementById('auth-overlay').classList.add('hidden');
+                    renderMatrix();
+                } else {
+                    errorElement.innerText = "Access Denied: Incorrect password.";
+                }
             }
         }
 
@@ -82,15 +107,20 @@
             const mount = document.getElementById('matrix-log-mount');
             mount.innerHTML = '';
 
-            // Categorize array records chronologically
+            if (realTelemetryLogs.length === 0) {
+                mount.innerHTML = '<p style="padding: 40px 20px; text-align: center; color: var(--text-muted); font-style: italic;">No real device history recorded yet. Waiting for incoming system data streams...</p>';
+                return;
+            }
+
+            // Categorize array records chronologically by year and month
             const groups = {};
-            historicalPayload.forEach(item => {
+            realTelemetryLogs.forEach(item => {
                 if (!groups[item.year]) groups[item.year] = {};
                 if (!groups[item.year][item.month]) groups[item.year][item.month] = [];
                 groups[item.year][item.month].push(item);
             });
 
-            // Dynamically construct nested structural layout
+            // Dynamically construct nested layout views
             for (const year in groups) {
                 const yearDiv = document.createElement('div');
                 yearDiv.className = 'time-group';
@@ -139,11 +169,14 @@
         }
 
         function clearSystemData() {
-            const validation = prompt("CRITICAL ACTION: Enter owner code to permanently drop history tables:");
+            const validation = prompt("CRITICAL SECURITY ACTION: Enter the master owner code to wipe database logs permanently:");
             if (validation === OWNER_SECRET) {
-                document.getElementById('matrix-log-mount').innerHTML = '<p style="padding:20px; text-align:center; color: var(--text-muted);">Database flushed clean. Zero data traces remain.</p>';
+                realTelemetryLogs = [];
+                localStorage.removeItem('realTelemetryLogs');
+                renderMatrix();
+                alert("Database logs purged successfully.");
             } else {
-                alert("Security alert: Unauthorized deletion attempt blocked.");
+                alert("Security alert: Deletion request rejected. Invalid owner code.");
             }
         }
     </script>
