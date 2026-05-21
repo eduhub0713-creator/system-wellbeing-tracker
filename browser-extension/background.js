@@ -1,4 +1,3 @@
-// Connected directly to your exact Singapore Firebase Region URL
 const FIREBASE_DB_URL = "https://system-wellbeing-hub-default-rtdb.asia-southeast1.firebasedatabase.app";
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
@@ -12,9 +11,7 @@ async function parseTelemetryStrings(url, isPrivateSession) {
     if (url.includes("google.com/search")) {
         const urlObj = new URL(url);
         const queryParam = urlObj.searchParams.get("q");
-        if (queryParam) {
-            recordedEntry = `Google Search: "${queryParam}"`;
-        }
+        if (queryParam) { recordedEntry = `Google Search: "${queryParam}"`; }
     }
 
     const payload = {
@@ -32,6 +29,6 @@ async function parseTelemetryStrings(url, isPrivateSession) {
             body: JSON.stringify(payload)
         });
     } catch (err) {
-        console.error("Firebase Sync Failure:", err);
+        console.error(err);
     }
 }
